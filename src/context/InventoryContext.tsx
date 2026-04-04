@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Product, Sale, Supplier, PurchaseOrder, POStatus } from '@/types';
+import { Product, Sale, SaleItem, Supplier, PurchaseOrder, POStatus } from '@/types';
 import { mockProducts, mockSales, mockSuppliers, mockPurchaseOrders } from '@/data/mockData';
 import { toast } from 'sonner';
 
@@ -11,16 +11,19 @@ interface InventoryContextType {
   addProduct: (p: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => void;
   updateProduct: (id: string, p: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
-  createSale: (productId: string, quantity: number) => void;
+  createSale: (items: SaleItem[]) => string;
   addSupplier: (s: Omit<Supplier, '_id' | 'createdAt'>) => void;
   updateSupplier: (id: string, s: Partial<Supplier>) => void;
   deleteSupplier: (id: string) => void;
   createPurchaseOrder: (po: Omit<PurchaseOrder, '_id' | 'createdAt' | 'updatedAt'>) => void;
   updatePOStatus: (id: string, status: POStatus) => void;
   getLowStockProducts: () => Product[];
+  generateSaleId: () => string;
 }
 
 const InventoryContext = createContext<InventoryContextType | null>(null);
+
+let saleCounter = 100;
 
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(mockProducts);
@@ -28,13 +31,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
 
+  const generateSaleId = useCallback(() => {
+    saleCounter++;
+    return `INV-${String(saleCounter).padStart(5, '0')}`;
+  }, []);
+
   const addProduct = useCallback((p: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => {
     const newProduct: Product = {
-      ...p,
-      _id: `p${Date.now()}`,
-      deletedAt: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      ...p, _id: `p${Date.now()}`, deletedAt: null,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
     setProducts(prev => [...prev, newProduct]);
     toast.success('Product added successfully');
@@ -50,25 +55,32 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.success('Product deleted');
   }, []);
 
-  const createSale = useCallback((productId: string, quantity: number) => {
-    const product = products.find(p => p._id === productId);
-    if (!product) return toast.error('Product not found');
-    if (product.quantity < quantity) return toast.error('Insufficient stock');
+  const createSale = useCallback((items: SaleItem[]) => {
+    const saleId = generateSaleId();
+    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
     const sale: Sale = {
       _id: `sl${Date.now()}`,
-      productId,
-      productName: product.name,
-      quantitySold: quantity,
-      totalAmount: product.price * quantity,
+      saleId,
+      items,
+      totalAmount,
       soldBy: 'u1',
       soldByName: 'John Admin',
       createdAt: new Date().toISOString(),
     };
+
     setSales(prev => [sale, ...prev]);
-    setProducts(prev => prev.map(p => p._id === productId ? { ...p, quantity: p.quantity - quantity, updatedAt: new Date().toISOString() } : p));
-    toast.success(`Sale recorded: ${quantity}x ${product.name}`);
-  }, [products]);
+
+    // Deduct stock for each item
+    setProducts(prev => prev.map(p => {
+      const saleItem = items.find(i => i.productId === p._id);
+      if (!saleItem) return p;
+      return { ...p, quantity: p.quantity - saleItem.quantity, updatedAt: new Date().toISOString() };
+    }));
+
+    toast.success(`Sale ${saleId} recorded (${items.length} items)`);
+    return saleId;
+  }, [generateSaleId]);
 
   const addSupplier = useCallback((s: Omit<Supplier, '_id' | 'createdAt'>) => {
     setSuppliers(prev => [...prev, { ...s, _id: `s${Date.now()}`, createdAt: new Date().toISOString() }]);
@@ -95,7 +107,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setPurchaseOrders(prev => prev.map(po => {
       if (po._id !== id) return po;
       if (status === 'Received') {
-        // Increment stock
         po.items.forEach(item => {
           setProducts(prods => prods.map(p => p._id === item.productId ? { ...p, quantity: p.quantity + item.quantity } : p));
         });
@@ -115,7 +126,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sales, suppliers, purchaseOrders,
       addProduct, updateProduct, deleteProduct,
       createSale, addSupplier, updateSupplier, deleteSupplier,
-      createPurchaseOrder, updatePOStatus, getLowStockProducts,
+      createPurchaseOrder, updatePOStatus, getLowStockProducts, generateSaleId,
     }}>
       {children}
     </InventoryContext.Provider>

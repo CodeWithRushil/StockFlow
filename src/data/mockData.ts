@@ -1,10 +1,10 @@
-import { Product, Sale, Supplier, PurchaseOrder, User } from '@/types';
+import { Product, Sale, Supplier, PurchaseOrder } from '@/types';
 
-export const mockUser: User = {
+export const mockUser = {
   _id: 'u1',
   name: 'John Admin',
   email: 'admin@ims.com',
-  role: 'admin',
+  role: 'admin' as const,
   token: 'mock-jwt-token',
 };
 
@@ -26,14 +26,34 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockSales: Sale[] = [
-  { _id: 'sl1', productId: 'p1', productName: 'Wireless Mouse', quantitySold: 5, totalAmount: 149.95, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-15T10:30:00Z' },
-  { _id: 'sl2', productId: 'p3', productName: 'Notebook A5', quantitySold: 20, totalAmount: 99.80, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-15T11:15:00Z' },
-  { _id: 'sl3', productId: 'p7', productName: 'Mechanical Keyboard', quantitySold: 2, totalAmount: 179.98, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-14T09:00:00Z' },
-  { _id: 'sl4', productId: 'p5', productName: 'Monitor Stand', quantitySold: 3, totalAmount: 149.97, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-14T14:30:00Z' },
-  { _id: 'sl5', productId: 'p2', productName: 'USB-C Cable', quantitySold: 10, totalAmount: 129.90, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-13T16:00:00Z' },
-  { _id: 'sl6', productId: 'p1', productName: 'Wireless Mouse', quantitySold: 8, totalAmount: 239.92, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-12T10:00:00Z' },
-  { _id: 'sl7', productId: 'p6', productName: 'Desk Lamp LED', quantitySold: 4, totalAmount: 139.96, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-11T13:45:00Z' },
-  { _id: 'sl8', productId: 'p4', productName: 'Ballpoint Pen Pack', quantitySold: 15, totalAmount: 97.35, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-10T11:20:00Z' },
+  {
+    _id: 'sl1', saleId: 'INV-00001',
+    items: [{ productId: 'p1', productName: 'Wireless Mouse', quantity: 5, unitPrice: 29.99, total: 149.95 }],
+    totalAmount: 149.95, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-15T10:30:00Z',
+  },
+  {
+    _id: 'sl2', saleId: 'INV-00002',
+    items: [
+      { productId: 'p3', productName: 'Notebook A5', quantity: 20, unitPrice: 4.99, total: 99.80 },
+      { productId: 'p4', productName: 'Ballpoint Pen Pack', quantity: 5, unitPrice: 6.49, total: 32.45 },
+    ],
+    totalAmount: 132.25, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-15T11:15:00Z',
+  },
+  {
+    _id: 'sl3', saleId: 'INV-00003',
+    items: [{ productId: 'p7', productName: 'Mechanical Keyboard', quantity: 2, unitPrice: 89.99, total: 179.98 }],
+    totalAmount: 179.98, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-14T09:00:00Z',
+  },
+  {
+    _id: 'sl4', saleId: 'INV-00004',
+    items: [{ productId: 'p5', productName: 'Monitor Stand', quantity: 3, unitPrice: 49.99, total: 149.97 }],
+    totalAmount: 149.97, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-14T14:30:00Z',
+  },
+  {
+    _id: 'sl5', saleId: 'INV-00005',
+    items: [{ productId: 'p2', productName: 'USB-C Cable', quantity: 10, unitPrice: 12.99, total: 129.90 }],
+    totalAmount: 129.90, soldBy: 'u1', soldByName: 'John Admin', createdAt: '2024-03-13T16:00:00Z',
+  },
 ];
 
 export const mockPurchaseOrders: PurchaseOrder[] = [

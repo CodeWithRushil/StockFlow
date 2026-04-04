@@ -23,15 +23,26 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface SaleItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 export interface Sale {
   _id: string;
-  productId: string;
-  productName?: string;
-  quantitySold: number;
+  saleId: string;
+  items: SaleItem[];
   totalAmount: number;
   soldBy: string;
   soldByName?: string;
   createdAt: string;
+  // Legacy single-item fields (for backward compat)
+  productId?: string;
+  productName?: string;
+  quantitySold?: number;
 }
 
 export interface Supplier {
