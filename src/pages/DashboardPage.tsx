@@ -4,14 +4,10 @@ import { DollarSign, Package, ShoppingCart, AlertTriangle, TrendingUp } from 'lu
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend
+  LineChart, Line
 } from 'recharts';
 import { mockSalesChartData, mockTopProducts } from '@/data/mockData';
 
-const CHART_COLORS = [
-  'hsl(217, 91%, 50%)', 'hsl(160, 84%, 39%)', 'hsl(38, 92%, 50%)',
-  'hsl(0, 84%, 60%)', 'hsl(270, 70%, 55%)',
-];
 
 const DashboardPage: React.FC = () => {
   const { products, sales, getLowStockProducts } = useInventory();
