@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { InventoryProvider } from "@/context/InventoryContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import DashboardPage from "@/pages/DashboardPage";
 import InventoryPage from "@/pages/InventoryPage";
@@ -36,14 +37,16 @@ const AuthenticatedApp = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AuthenticatedApp />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AuthenticatedApp />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
