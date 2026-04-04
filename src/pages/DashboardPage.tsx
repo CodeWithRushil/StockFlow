@@ -18,7 +18,7 @@ const DashboardPage: React.FC = () => {
   const lowStock = getLowStockProducts();
 
   const totalRevenue = sales.reduce((sum, s) => sum + s.totalAmount, 0);
-  const totalSalesCount = sales.reduce((sum, s) => sum + s.quantitySold, 0);
+  const totalSalesCount = sales.reduce((sum, s) => sum + (s.items?.reduce((t, i) => t + i.quantity, 0) || s.quantitySold || 0), 0);
 
   const stats = [
     { label: 'Total Products', value: products.length, icon: Package, color: 'hsl(217, 91%, 50%)' },
