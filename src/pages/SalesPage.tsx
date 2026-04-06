@@ -73,7 +73,7 @@ const SalesPage: React.FC = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`
-      <html><head><title>Bill - ${viewingSale?.saleId}</title>
+      <html><head><title>Bill - ₹{viewingSale?.saleId}</title>
       <style>
         body { font-family: monospace; max-width: 300px; margin: 0 auto; padding: 16px; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; }
@@ -81,7 +81,7 @@ const SalesPage: React.FC = () => {
         th { border-bottom: 1px dashed #000; }
         .right { text-align: right; }
         hr { border: none; border-top: 1px dashed #000; }
-      </style></head><body>${billRef.current.innerHTML}</body></html>
+      </style></head><body>₹{billRef.current.innerHTML}</body></html>
     `);
     printWindow.document.close();
     printWindow.print();
@@ -132,7 +132,7 @@ const SalesPage: React.FC = () => {
                     <td className="py-2.5 px-3 text-foreground">
                       {s.items?.map(i => `${i.productName} ×${i.quantity}`).join(', ') || s.productName}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-foreground font-medium">${s.totalAmount.toFixed(2)}</td>
+                    <td className="py-2.5 px-3 text-right text-foreground font-medium">₹{s.totalAmount.toFixed(2)}</td>
                     <td className="py-2.5 px-3 text-muted-foreground">{s.soldByName}</td>
                     <td className="py-2.5 px-3 text-muted-foreground">{new Date(s.createdAt).toLocaleDateString()}</td>
                     <td className="py-2.5 px-3 text-center">
@@ -181,7 +181,7 @@ const SalesPage: React.FC = () => {
 
             {product && (
               <p className="text-xs text-muted-foreground">
-                Price: ${product.price.toFixed(2)} · Available: {availableStock}
+                Price: ₹{product.price.toFixed(2)} · Available: {availableStock}
               </p>
             )}
 
@@ -202,8 +202,8 @@ const SalesPage: React.FC = () => {
                       <tr key={idx} className="border-b last:border-0">
                         <td className="py-1.5 px-2 text-foreground">{item.productName}</td>
                         <td className="py-1.5 px-2 text-right text-foreground">{item.quantity}</td>
-                        <td className="py-1.5 px-2 text-right text-muted-foreground">${item.unitPrice.toFixed(2)}</td>
-                        <td className="py-1.5 px-2 text-right font-medium text-foreground">${item.total.toFixed(2)}</td>
+                        <td className="py-1.5 px-2 text-right text-muted-foreground">₹{item.unitPrice.toFixed(2)}</td>
+                        <td className="py-1.5 px-2 text-right font-medium text-foreground">₹{item.total.toFixed(2)}</td>
                         <td className="py-1.5 px-1">
                           <button onClick={() => removeFromCart(idx)} className="text-destructive p-0.5">
                             <Trash2 className="h-3 w-3" />
@@ -219,7 +219,7 @@ const SalesPage: React.FC = () => {
             {cart.length > 0 && (
               <div className="flex items-center justify-between p-2 bg-muted rounded text-sm">
                 <span className="text-muted-foreground">{cart.length} item(s)</span>
-                <span className="font-bold text-foreground">${cartTotal.toFixed(2)}</span>
+                <span className="font-bold text-foreground">₹{cartTotal.toFixed(2)}</span>
               </div>
             )}
 
@@ -267,8 +267,8 @@ const SalesPage: React.FC = () => {
                   <tr key={i} className="border-b border-dashed last:border-0">
                     <td className="py-1 text-foreground">{item.productName}</td>
                     <td className="py-1 text-right text-foreground">{item.quantity}</td>
-                    <td className="py-1 text-right text-muted-foreground">${item.unitPrice.toFixed(2)}</td>
-                    <td className="py-1 text-right font-medium text-foreground">${item.total.toFixed(2)}</td>
+                    <td className="py-1 text-right text-muted-foreground">₹{item.unitPrice.toFixed(2)}</td>
+                    <td className="py-1 text-right font-medium text-foreground">₹{item.total.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -276,7 +276,7 @@ const SalesPage: React.FC = () => {
             <Separator />
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Total</span>
-              <span className="text-lg font-bold text-foreground">${viewingSale?.totalAmount.toFixed(2)}</span>
+              <span className="text-lg font-bold text-foreground">₹{viewingSale?.totalAmount.toFixed(2)}</span>
             </div>
             <p className="text-xs text-muted-foreground">Cashier: {viewingSale?.soldByName}</p>
             <Separator />
