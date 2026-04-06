@@ -26,36 +26,33 @@ export const AppSidebar: React.FC<{ open: boolean; onToggle: () => void }> = ({ 
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={onToggle} />
+        <div className="fixed inset-0 z-30 bg-foreground/30 lg:hidden" onClick={onToggle} />
       )}
 
       <aside className={cn(
-        "fixed top-0 left-0 z-40 h-screen w-64 flex flex-col transition-transform duration-300 lg:sticky lg:top-0 lg:z-auto lg:translate-x-0",
+        "fixed top-0 left-0 z-40 h-screen w-60 flex flex-col lg:sticky lg:top-0 lg:z-auto lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full",
         "bg-sidebar text-sidebar-foreground border-r border-sidebar-border"
       )}>
-        {/* Header */}
-        <div className="flex items-center justify-between h-16 px-5 border-b border-sidebar-border shrink-0">
+        <div className="flex items-center justify-between h-14 px-4 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <Package className="h-6 w-6 text-sidebar-primary" />
-            <span className="text-lg font-bold text-sidebar-primary-foreground">StockFlow</span>
+            <Package className="h-5 w-5 text-sidebar-primary" />
+            <span className="text-base font-bold text-sidebar-primary-foreground">StockFlow</span>
           </div>
           <button onClick={onToggle} className="lg:hidden text-sidebar-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Low stock alert */}
         {lowStockCount > 0 && (
-          <div className="mx-3 mt-3 p-2.5 rounded-lg flex items-center gap-2 text-xs font-medium shrink-0"
-            style={{ backgroundColor: 'hsl(38 92% 50% / 0.15)', color: 'hsl(38 92% 50%)' }}>
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{lowStockCount} items low on stock</span>
+          <div className="mx-3 mt-3 p-2 rounded border flex items-center gap-2 text-xs"
+            style={{ backgroundColor: 'hsl(40 85% 48% / 0.12)', color: 'hsl(40 85% 48%)', borderColor: 'hsl(40 85% 48% / 0.25)' }}>
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>{lowStockCount} low stock</span>
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {navItems.filter(item => hasRole(item.roles as any)).map(item => (
             <NavLink
               key={item.to}
@@ -63,9 +60,9 @@ export const AppSidebar: React.FC<{ open: boolean; onToggle: () => void }> = ({ 
               end={item.to === '/'}
               onClick={() => window.innerWidth < 1024 && onToggle()}
               className={({ isActive }) => cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-2.5 px-3 py-2 rounded text-sm",
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
@@ -75,14 +72,13 @@ export const AppSidebar: React.FC<{ open: boolean; onToggle: () => void }> = ({ 
           ))}
         </nav>
 
-        {/* User footer */}
-        <div className="p-3 border-t border-sidebar-border shrink-0">
-          <div className="flex items-center justify-between px-3 py-2">
+        <div className="p-3 border-t border-sidebar-border">
+          <div className="flex items-center justify-between px-2 py-1.5">
             <div>
               <p className="text-sm font-medium text-sidebar-primary-foreground">{user?.name}</p>
               <p className="text-xs capitalize text-sidebar-foreground">{user?.role}</p>
             </div>
-            <button onClick={logout} className="p-1.5 rounded-md transition-colors text-sidebar-foreground hover:text-sidebar-primary-foreground"
+            <button onClick={logout} className="p-1.5 rounded hover:bg-sidebar-accent text-sidebar-foreground"
               title="Logout">
               <LogOut className="h-4 w-4" />
             </button>
@@ -101,17 +97,17 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     <div className="flex min-h-screen w-full bg-background">
       <AppSidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 flex items-center px-4 border-b bg-card lg:px-6 shrink-0">
+        <header className="h-14 flex items-center px-4 border-b bg-card">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-muted-foreground">
             <Menu className="h-5 w-5" />
           </button>
           <div className="ml-auto">
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
           </div>
         </header>
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-4 lg:p-5 overflow-auto">
           {children}
         </main>
       </div>

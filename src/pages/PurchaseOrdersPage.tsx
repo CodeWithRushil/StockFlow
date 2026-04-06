@@ -24,18 +24,13 @@ const PurchaseOrdersPage: React.FC = () => {
 
   const lowStockProducts = getLowStockProducts();
 
-  const openCreate = () => {
-    setSelectedSupplier('');
-    setItems([]);
-    setDialogOpen(true);
-  };
+  const openCreate = () => { setSelectedSupplier(''); setItems([]); setDialogOpen(true); };
 
   const autoFillLowStock = () => {
     if (!selectedSupplier) return;
     const supplierProducts = lowStockProducts.filter(p => p.supplierId === selectedSupplier);
     setItems(supplierProducts.map(p => ({
-      productId: p._id,
-      productName: p.name,
+      productId: p._id, productName: p.name,
       quantity: p.threshold - p.quantity + 10,
       unitPrice: p.price * 0.7,
     })));
@@ -45,36 +40,34 @@ const PurchaseOrdersPage: React.FC = () => {
     if (!selectedSupplier || items.length === 0) return;
     const supplier = suppliers.find(s => s._id === selectedSupplier);
     createPurchaseOrder({
-      supplierId: selectedSupplier,
-      supplierName: supplier?.companyName,
-      items,
-      status: 'Draft',
+      supplierId: selectedSupplier, supplierName: supplier?.companyName,
+      items, status: 'Draft',
       totalAmount: items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
     });
     setDialogOpen(false);
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Purchase Orders</h1>
-          <p className="text-sm text-muted-foreground mt-1">{purchaseOrders.length} orders</p>
+          <h1 className="text-xl font-bold text-foreground">Purchase Orders</h1>
+          <p className="text-xs text-muted-foreground">{purchaseOrders.length} orders</p>
         </div>
-        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> New PO</Button>
+        <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> New PO</Button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {purchaseOrders.map(po => (
-          <Card key={po._id} className="hover:shadow-md transition-shadow">
-            <CardContent className="pt-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-primary" />
+          <Card key={po._id}>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">{po.supplierName}</h3>
+                    <h3 className="font-semibold text-foreground text-sm">{po.supplierName}</h3>
                     <p className="text-xs text-muted-foreground">{po.items.length} items · ${po.totalAmount.toFixed(2)}</p>
                   </div>
                 </div>
@@ -84,46 +77,49 @@ const PurchaseOrdersPage: React.FC = () => {
                     <Button size="sm" variant="outline" onClick={() => updatePOStatus(po._id, 'Sent')}>Send</Button>
                   )}
                   {po.status === 'Sent' && (
-                    <Button size="sm" variant="outline" onClick={() => updatePOStatus(po._id, 'Received')}>Mark Received</Button>
+                    <Button size="sm" variant="outline" onClick={() => updatePOStatus(po._id, 'Received')}>Received</Button>
                   )}
                   {(po.status === 'Draft' || po.status === 'Sent') && (
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={() => updatePOStatus(po._id, 'Cancelled')}>Cancel</Button>
                   )}
                 </div>
               </div>
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-3 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium text-muted-foreground">Product</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">Qty</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">Unit Price</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">Subtotal</th>
+                      <th className="text-left py-1.5 font-medium text-muted-foreground text-xs">Product</th>
+                      <th className="text-right py-1.5 font-medium text-muted-foreground text-xs">Qty</th>
+                      <th className="text-right py-1.5 font-medium text-muted-foreground text-xs">Unit Price</th>
+                      <th className="text-right py-1.5 font-medium text-muted-foreground text-xs">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
                     {po.items.map((item, i) => (
                       <tr key={i} className="border-b last:border-0">
-                        <td className="py-2 text-foreground">{item.productName}</td>
-                        <td className="py-2 text-right text-foreground">{item.quantity}</td>
-                        <td className="py-2 text-right text-muted-foreground">${item.unitPrice.toFixed(2)}</td>
-                        <td className="py-2 text-right text-foreground font-medium">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                        <td className="py-1.5 text-foreground">{item.productName}</td>
+                        <td className="py-1.5 text-right text-foreground">{item.quantity}</td>
+                        <td className="py-1.5 text-right text-muted-foreground">${item.unitPrice.toFixed(2)}</td>
+                        <td className="py-1.5 text-right text-foreground font-medium">${(item.quantity * item.unitPrice).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-2 text-xs text-muted-foreground">Created: {new Date(po.createdAt).toLocaleDateString()}</div>
+              <p className="mt-2 text-xs text-muted-foreground">Created: {new Date(po.createdAt).toLocaleDateString()}</p>
             </CardContent>
           </Card>
         ))}
+        {purchaseOrders.length === 0 && (
+          <div className="py-10 text-center text-muted-foreground text-sm">No purchase orders yet</div>
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>New Purchase Order</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
+          <div className="space-y-3">
+            <div className="space-y-1">
               <Label>Supplier</Label>
               <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
                 <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
@@ -132,29 +128,29 @@ const PurchaseOrdersPage: React.FC = () => {
             </div>
             {selectedSupplier && (
               <Button variant="outline" size="sm" onClick={autoFillLowStock}>
-                Auto-fill low stock items
+                Auto-fill low stock
               </Button>
             )}
             {items.length > 0 && (
-              <div className="border rounded-lg p-3 space-y-2">
+              <div className="border rounded p-2 space-y-2">
                 {items.map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{item.productName}</span>
-                    <div className="flex items-center gap-3">
-                      <Input type="number" className="w-20 h-8" value={item.quantity}
+                    <div className="flex items-center gap-2">
+                      <Input type="number" className="w-16 h-7 text-xs" value={item.quantity}
                         onChange={e => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: +e.target.value } : it))} />
-                      <span className="text-muted-foreground w-20 text-right">${(item.quantity * item.unitPrice).toFixed(2)}</span>
+                      <span className="text-muted-foreground text-xs w-16 text-right">${(item.quantity * item.unitPrice).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
-                <div className="pt-2 border-t text-sm font-medium text-foreground text-right">
+                <div className="pt-1 border-t text-sm font-medium text-foreground text-right">
                   Total: ${items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0).toFixed(2)}
                 </div>
               </div>
             )}
-            <div className="flex justify-end gap-2 pt-2">
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleCreate} disabled={!selectedSupplier || items.length === 0}>Create PO</Button>
+            <div className="flex justify-end gap-2">
+              <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
+              <Button size="sm" onClick={handleCreate} disabled={!selectedSupplier || items.length === 0}>Create PO</Button>
             </div>
           </div>
         </DialogContent>
