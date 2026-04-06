@@ -18,7 +18,7 @@ const DashboardPage: React.FC = () => {
   const stats = [
     { label: 'Total Products', value: products.length, icon: Package, bg: 'bg-primary/10', color: 'text-primary' },
     { label: 'Total Sales', value: totalSalesCount, icon: ShoppingCart, bg: 'bg-success/10', color: 'text-success' },
-    { label: 'Revenue', value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign, bg: 'bg-info/10', color: 'text-info' },
+    { label: 'Revenue', value: `₹${totalRevenue.toFixed(2)}`, icon: DollarSign, bg: 'bg-info/10', color: 'text-info' },
     { label: 'Low Stock', value: lowStock.length, icon: AlertTriangle, bg: 'bg-warning/10', color: 'text-warning' },
   ];
 
@@ -54,7 +54,7 @@ const DashboardPage: React.FC = () => {
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(0, 0%, 40%)" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(0, 0%, 40%)" />
                 <Tooltip contentStyle={{ borderRadius: 4, border: '1px solid hsl(0,0%,82%)', fontSize: 12 }} />
-                <Line type="monotone" dataKey="revenue" stroke="hsl(220, 70%, 45%)" strokeWidth={2} dot={{ r: 3 }} name="Revenue ($)" />
+                <Line type="monotone" dataKey="revenue" stroke="hsl(220, 70%, 45%)" strokeWidth={2} dot={{ r: 3 }} name="Revenue (₹)" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

@@ -68,7 +68,7 @@ const PurchaseOrdersPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground text-sm">{po.supplierName}</h3>
-                    <p className="text-xs text-muted-foreground">{po.items.length} items · ${po.totalAmount.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">{po.items.length} items · ₹{po.totalAmount.toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -99,8 +99,8 @@ const PurchaseOrdersPage: React.FC = () => {
                       <tr key={i} className="border-b last:border-0">
                         <td className="py-1.5 text-foreground">{item.productName}</td>
                         <td className="py-1.5 text-right text-foreground">{item.quantity}</td>
-                        <td className="py-1.5 text-right text-muted-foreground">${item.unitPrice.toFixed(2)}</td>
-                        <td className="py-1.5 text-right text-foreground font-medium">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                        <td className="py-1.5 text-right text-muted-foreground">₹{item.unitPrice.toFixed(2)}</td>
+                        <td className="py-1.5 text-right text-foreground font-medium">₹{(item.quantity * item.unitPrice).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -139,12 +139,12 @@ const PurchaseOrdersPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Input type="number" className="w-16 h-7 text-xs" value={item.quantity}
                         onChange={e => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: +e.target.value } : it))} />
-                      <span className="text-muted-foreground text-xs w-16 text-right">${(item.quantity * item.unitPrice).toFixed(2)}</span>
+                      <span className="text-muted-foreground text-xs w-16 text-right">₹{(item.quantity * item.unitPrice).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
                 <div className="pt-1 border-t text-sm font-medium text-foreground text-right">
-                  Total: ${items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0).toFixed(2)}
+                  Total: ₹{items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0).toFixed(2)}
                 </div>
               </div>
             )}

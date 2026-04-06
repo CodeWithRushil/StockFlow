@@ -100,7 +100,7 @@ const InventoryPage: React.FC = () => {
                     <td className="py-2.5 px-3 font-medium text-foreground">{p.name}</td>
                     <td className="py-2.5 px-3 text-muted-foreground font-mono text-xs">{p.sku}</td>
                     <td className="py-2.5 px-3 text-muted-foreground">{p.category}</td>
-                    <td className="py-2.5 px-3 text-right text-foreground">${p.price.toFixed(2)}</td>
+                    <td className="py-2.5 px-3 text-right text-foreground">₹{p.price.toFixed(2)}</td>
                     <td className="py-2.5 px-3 text-right">
                       {p.quantity < p.threshold
                         ? <span className="low-stock-badge">{p.quantity}</span>
