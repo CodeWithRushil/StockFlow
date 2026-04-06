@@ -4,7 +4,7 @@ import { Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -24,29 +24,29 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
-            <Package className="h-6 w-6 text-primary-foreground" />
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-2 h-10 w-10 rounded bg-primary flex items-center justify-center">
+            <Package className="h-5 w-5 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">StockFlow IMS</CardTitle>
-          <CardDescription>Sign in to manage your inventory</CardDescription>
+          <CardTitle className="text-xl">StockFlow Login</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to continue</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
-            <p className="text-xs text-center text-muted-foreground mt-3">
-              Demo: admin@ims.com / password
+            <p className="text-xs text-center text-muted-foreground">
+              Demo credentials: admin@ims.com / password
             </p>
           </form>
         </CardContent>
