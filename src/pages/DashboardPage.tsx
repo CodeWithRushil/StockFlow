@@ -1,6 +1,6 @@
 import React from 'react';
 import { useInventory } from '@/context/InventoryContext';
-import { DollarSign, Package, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { IndianRupee, Package, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,7 +18,7 @@ const DashboardPage: React.FC = () => {
   const stats = [
     { label: 'Total Products', value: products.length, icon: Package, bg: 'bg-primary/10', color: 'text-primary' },
     { label: 'Total Sales', value: totalSalesCount, icon: ShoppingCart, bg: 'bg-success/10', color: 'text-success' },
-    { label: 'Revenue', value: `₹${totalRevenue.toFixed(2)}`, icon: DollarSign, bg: 'bg-info/10', color: 'text-info' },
+    { label: 'Revenue', value: `₹${totalRevenue.toFixed(2)}`, icon: IndianRupee, bg: 'bg-info/10', color: 'text-info' },
     { label: 'Low Stock', value: lowStock.length, icon: AlertTriangle, bg: 'bg-warning/10', color: 'text-warning' },
   ];
 
