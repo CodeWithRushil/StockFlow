@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# StockFlow | Inventory Management System
 
-TODO: Document your project here
+Made by: Rushil Sharma, Rohit Singh and Lavanya Tyagi
