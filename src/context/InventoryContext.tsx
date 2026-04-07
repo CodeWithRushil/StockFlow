@@ -1,133 +1,202 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Product, Sale, SaleItem, Supplier, PurchaseOrder, POStatus } from '@/types';
-import { mockProducts, mockSales, mockSuppliers, mockPurchaseOrders } from '@/data/mockData';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
+
+type ProductInput = Pick<Product, 'name' | 'sku' | 'category' | 'price' | 'quantity' | 'threshold' | 'supplierId'>;
 
 interface InventoryContextType {
   products: Product[];
   sales: Sale[];
   suppliers: Supplier[];
   purchaseOrders: PurchaseOrder[];
-  addProduct: (p: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => void;
-  updateProduct: (id: string, p: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  createSale: (items: SaleItem[]) => string;
-  addSupplier: (s: Omit<Supplier, '_id' | 'createdAt'>) => void;
-  updateSupplier: (id: string, s: Partial<Supplier>) => void;
-  deleteSupplier: (id: string) => void;
-  createPurchaseOrder: (po: Omit<PurchaseOrder, '_id' | 'createdAt' | 'updatedAt'>) => void;
-  updatePOStatus: (id: string, status: POStatus) => void;
+  loading: boolean;
+  refreshInventory: () => Promise<void>;
+  addProduct: (p: ProductInput) => Promise<void>;
+  updateProduct: (id: string, p: Partial<ProductInput>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  createSale: (items: SaleItem[]) => Promise<Sale>;
+  deleteSale: (id: string) => Promise<void>;
+  addSupplier: (s: Omit<Supplier, '_id' | 'createdAt'>) => Promise<void>;
+  updateSupplier: (id: string, s: Partial<Supplier>) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
+  createPurchaseOrder: (po: Omit<PurchaseOrder, '_id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updatePOStatus: (id: string, status: POStatus) => Promise<void>;
   getLowStockProducts: () => Product[];
-  generateSaleId: () => string;
 }
 
 const InventoryContext = createContext<InventoryContextType | null>(null);
 
-let saleCounter = 100;
-
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [sales, setSales] = useState<Sale[]>(mockSales);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const generateSaleId = useCallback(() => {
-    saleCounter++;
-    return `INV-${String(saleCounter).padStart(5, '0')}`;
+  const refreshInventory = useCallback(async () => {
+    const raw = localStorage.getItem('ims_user');
+    if (!raw) {
+      setProducts([]);
+      setSales([]);
+      setSuppliers([]);
+      setPurchaseOrders([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const [productsRes, suppliersRes, salesRes, poRes] = await Promise.all([
+        api.get<Product[]>('/products'),
+        api.get<Supplier[]>('/suppliers'),
+        api.get<Sale[]>('/sales'),
+        api.get<PurchaseOrder[]>('/purchase-orders'),
+      ]);
+      setProducts(productsRes.data);
+      setSuppliers(suppliersRes.data);
+      setSales(salesRes.data);
+      setPurchaseOrders(poRes.data);
+    } catch {
+      toast.error('Failed to load inventory from server');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const addProduct = useCallback((p: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => {
-    const newProduct: Product = {
-      ...p, _id: `p${Date.now()}`, deletedAt: null,
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    };
-    setProducts(prev => [...prev, newProduct]);
+  useEffect(() => {
+    void refreshInventory();
+  }, [refreshInventory]);
+
+  const addProduct = useCallback(async (p: ProductInput) => {
+    const { data } = await api.post<Product>('/products', p);
+    setProducts((prev) => [data, ...prev]);
     toast.success('Product added successfully');
   }, []);
 
-  const updateProduct = useCallback((id: string, data: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p._id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p));
+  const updateProduct = useCallback(async (id: string, data: Partial<ProductInput>) => {
+    const { data: updated } = await api.put<Product>(`/products/${id}`, data);
+    setProducts((prev) => prev.map((x) => (x._id === id ? updated : x)));
     toast.success('Product updated');
   }, []);
 
-  const deleteProduct = useCallback((id: string) => {
-    setProducts(prev => prev.map(p => p._id === id ? { ...p, deletedAt: new Date().toISOString() } : p));
+  const deleteProduct = useCallback(async (id: string) => {
+    await api.delete(`/products/${id}`);
+    setProducts((prev) => prev.filter((p) => p._id !== id));
     toast.success('Product deleted');
   }, []);
 
-  const createSale = useCallback((items: SaleItem[]) => {
-    const saleId = generateSaleId();
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-
-    const sale: Sale = {
-      _id: `sl${Date.now()}`,
-      saleId,
-      items,
-      totalAmount,
-      soldBy: 'u1',
-      soldByName: 'John Admin',
-      createdAt: new Date().toISOString(),
+  const createSale = useCallback(async (items: SaleItem[]) => {
+    const payload = {
+      items: items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+      })),
     };
 
-    setSales(prev => [sale, ...prev]);
+    const { data } = await api.post<Sale>('/sales', payload);
+    setSales((prev) => [data, ...prev]);
 
-    // Deduct stock for each item
-    setProducts(prev => prev.map(p => {
-      const saleItem = items.find(i => i.productId === p._id);
-      if (!saleItem) return p;
-      return { ...p, quantity: p.quantity - saleItem.quantity, updatedAt: new Date().toISOString() };
-    }));
+    try {
+      const productsRes = await api.get<Product[]>('/products');
+      setProducts(productsRes.data);
+    } catch {
+      // ignore
+    }
 
-    toast.success(`Sale ${saleId} recorded (${items.length} items)`);
-    return saleId;
-  }, [generateSaleId]);
+    toast.success(`Sale ${data.saleId} recorded (${items.length} items)`);
+    return data;
+  }, []);
 
-  const addSupplier = useCallback((s: Omit<Supplier, '_id' | 'createdAt'>) => {
-    setSuppliers(prev => [...prev, { ...s, _id: `s${Date.now()}`, createdAt: new Date().toISOString() }]);
+  const deleteSale = useCallback(async (id: string) => {
+    await api.delete(`/sales/${id}`);
+    setSales((prev) => prev.filter((s) => s._id !== id));
+    try {
+      const productsRes = await api.get<Product[]>('/products');
+      setProducts(productsRes.data);
+    } catch {
+      // ignore
+    }
+    toast.success('Sale deleted and stock restored');
+  }, []);
+
+  const addSupplier = useCallback(async (s: Omit<Supplier, '_id' | 'createdAt'>) => {
+    const { data } = await api.post<Supplier>('/suppliers', s);
+    setSuppliers((prev) => [data, ...prev]);
     toast.success('Supplier added');
   }, []);
 
-  const updateSupplier = useCallback((id: string, data: Partial<Supplier>) => {
-    setSuppliers(prev => prev.map(s => s._id === id ? { ...s, ...data } : s));
+  const updateSupplier = useCallback(async (id: string, data: Partial<Supplier>) => {
+    const { data: updated } = await api.put<Supplier>(`/suppliers/${id}`, data);
+    setSuppliers((prev) => prev.map((x) => (x._id === id ? updated : x)));
     toast.success('Supplier updated');
   }, []);
 
-  const deleteSupplier = useCallback((id: string) => {
-    setSuppliers(prev => prev.filter(s => s._id !== id));
+  const deleteSupplier = useCallback(async (id: string) => {
+    await api.delete(`/suppliers/${id}`);
+    setSuppliers((prev) => prev.filter((s) => s._id !== id));
     toast.success('Supplier deleted');
   }, []);
 
-  const createPurchaseOrder = useCallback((po: Omit<PurchaseOrder, '_id' | 'createdAt' | 'updatedAt'>) => {
-    const newPO: PurchaseOrder = { ...po, _id: `po${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    setPurchaseOrders(prev => [...prev, newPO]);
+  const createPurchaseOrder = useCallback(async (po: Omit<PurchaseOrder, '_id' | 'createdAt' | 'updatedAt'>) => {
+    const body = {
+      supplierId: po.supplierId,
+      status: po.status,
+      items: po.items.map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+      })),
+    };
+    const { data } = await api.post<PurchaseOrder>('/purchase-orders', body);
+    setPurchaseOrders((prev) => [data, ...prev]);
     toast.success('Purchase order created');
   }, []);
 
-  const updatePOStatus = useCallback((id: string, status: POStatus) => {
-    setPurchaseOrders(prev => prev.map(po => {
-      if (po._id !== id) return po;
-      if (status === 'Received') {
-        po.items.forEach(item => {
-          setProducts(prods => prods.map(p => p._id === item.productId ? { ...p, quantity: p.quantity + item.quantity } : p));
-        });
+  const updatePOStatus = useCallback(async (id: string, status: POStatus) => {
+    const { data: updated } = await api.put<PurchaseOrder>(`/purchase-orders/${id}`, { status });
+    setPurchaseOrders((prev) => prev.map((x) => (x._id === id ? updated : x)));
+    if (status === 'Received') {
+      try {
+        const productsRes = await api.get<Product[]>('/products');
+        setProducts(productsRes.data);
         toast.success('Stock updated from received PO');
+      } catch {
+        // ignore
       }
-      return { ...po, status, updatedAt: new Date().toISOString() };
-    }));
+    } else {
+      toast.success(
+        status === 'Sent' ? 'Purchase order sent' : status === 'Cancelled' ? 'Purchase order cancelled' : 'Order updated'
+      );
+    }
   }, []);
 
   const getLowStockProducts = useCallback(() => {
-    return products.filter(p => !p.deletedAt && p.quantity < p.threshold);
+    return products.filter((p) => !p.deletedAt && p.quantity < p.threshold);
   }, [products]);
 
   return (
-    <InventoryContext.Provider value={{
-      products: products.filter(p => !p.deletedAt),
-      sales, suppliers, purchaseOrders,
-      addProduct, updateProduct, deleteProduct,
-      createSale, addSupplier, updateSupplier, deleteSupplier,
-      createPurchaseOrder, updatePOStatus, getLowStockProducts, generateSaleId,
-    }}>
+    <InventoryContext.Provider
+      value={{
+        products: products.filter((p) => !p.deletedAt),
+        sales,
+        suppliers,
+        purchaseOrders,
+        loading,
+        refreshInventory,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        createSale,
+        deleteSale,
+        addSupplier,
+        updateSupplier,
+        deleteSupplier,
+        createPurchaseOrder,
+        updatePOStatus,
+        getLowStockProducts,
+      }}
+    >
       {children}
     </InventoryContext.Provider>
   );

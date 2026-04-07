@@ -1,0 +1,17 @@
+{
+  "name": "StockFlow",
+  "short_name": "StockFlow",
+  "description": "Inventory management for products, suppliers, sales, and purchase orders.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "hsl(221 83% 53%)",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

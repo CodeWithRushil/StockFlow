@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { POStatus, PurchaseOrderItem } from '@/types';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const statusStyles: Record<POStatus, string> = {
   Draft: 'status-draft',
@@ -17,7 +19,9 @@ const statusStyles: Record<POStatus, string> = {
 };
 
 const PurchaseOrdersPage: React.FC = () => {
+  const { hasRole } = useAuth();
   const { purchaseOrders, suppliers, products, getLowStockProducts, createPurchaseOrder, updatePOStatus } = useInventory();
+  const canEdit = hasRole(['admin', 'manager']);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
@@ -29,22 +33,60 @@ const PurchaseOrdersPage: React.FC = () => {
   const autoFillLowStock = () => {
     if (!selectedSupplier) return;
     const supplierProducts = lowStockProducts.filter(p => p.supplierId === selectedSupplier);
-    setItems(supplierProducts.map(p => ({
-      productId: p._id, productName: p.name,
-      quantity: p.threshold - p.quantity + 10,
+
+    if (supplierProducts.length > 0) {
+      setItems(supplierProducts.map(p => ({
+        productId: p._id, productName: p.name,
+        quantity: Math.max(1, p.threshold - p.quantity + 10),
+        unitPrice: p.price * 0.7,
+      })));
+      return;
+    }
+
+    // Fallback: allow creating PO even when nothing is currently low-stock.
+    const allSupplierProducts = products.filter((p) => p.supplierId === selectedSupplier);
+    if (allSupplierProducts.length === 0) {
+      toast.error('No products found for this supplier');
+      return;
+    }
+    setItems(allSupplierProducts.map((p) => ({
+      productId: p._id,
+      productName: p.name,
+      quantity: Math.max(1, p.threshold || 1),
       unitPrice: p.price * 0.7,
     })));
+    toast.info('No low-stock items for this supplier, filled with supplier catalog');
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!selectedSupplier || items.length === 0) return;
+    if (items.some((i) => !i.productId || i.quantity <= 0 || i.unitPrice <= 0)) {
+      toast.error('Each item must have valid product, quantity, and unit price');
+      return;
+    }
     const supplier = suppliers.find(s => s._id === selectedSupplier);
-    createPurchaseOrder({
-      supplierId: selectedSupplier, supplierName: supplier?.companyName,
-      items, status: 'Draft',
-      totalAmount: items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
-    });
-    setDialogOpen(false);
+    try {
+      await createPurchaseOrder({
+        supplierId: selectedSupplier,
+        supplierName: supplier?.companyName,
+        items,
+        status: 'Draft',
+        totalAmount: items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
+      });
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(ax.response?.data?.message || ax.message || 'Could not create purchase order');
+    }
+  };
+
+  const setStatus = async (id: string, status: POStatus) => {
+    try {
+      await updatePOStatus(id, status);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(ax.response?.data?.message || ax.message || 'Could not update order');
+    }
   };
 
   return (
@@ -54,7 +96,7 @@ const PurchaseOrdersPage: React.FC = () => {
           <h1 className="text-xl font-bold text-foreground">Purchase Orders</h1>
           <p className="text-xs text-muted-foreground">{purchaseOrders.length} orders</p>
         </div>
-        <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> New PO</Button>
+        {canEdit && <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> New PO</Button>}
       </div>
 
       <div className="space-y-3">
@@ -73,14 +115,14 @@ const PurchaseOrdersPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={statusStyles[po.status]}>{po.status}</span>
-                  {po.status === 'Draft' && (
-                    <Button size="sm" variant="outline" onClick={() => updatePOStatus(po._id, 'Sent')}>Send</Button>
+                  {canEdit && po.status === 'Draft' && (
+                    <Button size="sm" variant="outline" onClick={() => setStatus(po._id, 'Sent')}>Send</Button>
                   )}
-                  {po.status === 'Sent' && (
-                    <Button size="sm" variant="outline" onClick={() => updatePOStatus(po._id, 'Received')}>Received</Button>
+                  {canEdit && po.status === 'Sent' && (
+                    <Button size="sm" variant="outline" onClick={() => setStatus(po._id, 'Received')}>Received</Button>
                   )}
-                  {(po.status === 'Draft' || po.status === 'Sent') && (
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => updatePOStatus(po._id, 'Cancelled')}>Cancel</Button>
+                  {canEdit && (po.status === 'Draft' || po.status === 'Sent') && (
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setStatus(po._id, 'Cancelled')}>Cancel</Button>
                   )}
                 </div>
               </div>
@@ -115,7 +157,7 @@ const PurchaseOrdersPage: React.FC = () => {
         )}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen && canEdit} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>New Purchase Order</DialogTitle></DialogHeader>
           <div className="space-y-3">

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -11,23 +11,38 @@ import InventoryPage from "@/pages/InventoryPage";
 import SalesPage from "@/pages/SalesPage";
 import SuppliersPage from "@/pages/SuppliersPage";
 import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
+import UsersPage from "@/pages/UsersPage";
 import LoginPage from "@/pages/LoginPage";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
+import RoleGuard from "@/components/auth/RoleGuard";
 
 const queryClient = new QueryClient();
 
-const AuthenticatedApp = () => {
+const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <LoginPage />;
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <InventoryProvider>
       <AppLayout>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/" element={<RoleGuard allow={["admin", "manager", "staff"]}><DashboardPage /></RoleGuard>} />
+          <Route path="/inventory" element={<RoleGuard allow={["admin", "manager", "staff"]}><InventoryPage /></RoleGuard>} />
           <Route path="/sales" element={<SalesPage />} />
-          <Route path="/suppliers" element={<SuppliersPage />} />
-          <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+          <Route path="/suppliers" element={<RoleGuard allow={["admin", "manager", "staff"]}><SuppliersPage /></RoleGuard>} />
+          <Route path="/purchase-orders" element={<RoleGuard allow={["admin", "manager", "staff"]}><PurchaseOrdersPage /></RoleGuard>} />
+          <Route path="/users" element={<RoleGuard allow={["admin"]}><UsersPage /></RoleGuard>} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>
@@ -42,7 +57,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AuthenticatedApp />
+            <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

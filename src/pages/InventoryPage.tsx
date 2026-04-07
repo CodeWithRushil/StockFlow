@@ -8,11 +8,23 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Product } from '@/types';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
-const emptyProduct = { name: '', sku: '', category: '', price: 0, quantity: 0, threshold: 10, supplierId: '' };
+const emptyProduct = {
+  name: '',
+  sku: '',
+  category: '',
+  price: 0 as number | '',
+  quantity: 0 as number | '',
+  threshold: 10 as number | '',
+  supplierId: '',
+};
 
 const InventoryPage: React.FC = () => {
+  const { hasRole } = useAuth();
   const { products, suppliers, addProduct, updateProduct, deleteProduct } = useInventory();
+  const canEdit = hasRole(['admin', 'manager']);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [supplierFilter, setSupplierFilter] = useState('all');
@@ -32,14 +44,37 @@ const InventoryPage: React.FC = () => {
   const openAdd = () => { setEditing(null); setForm(emptyProduct); setDialogOpen(true); };
   const openEdit = (p: Product) => { setEditing(p); setForm({ name: p.name, sku: p.sku, category: p.category, price: p.price, quantity: p.quantity, threshold: p.threshold, supplierId: p.supplierId }); setDialogOpen(true); };
 
-  const handleSave = () => {
-    const supplier = suppliers.find(s => s._id === form.supplierId);
-    if (editing) {
-      updateProduct(editing._id, { ...form, supplierName: supplier?.companyName });
-    } else {
-      addProduct({ ...form, supplierName: supplier?.companyName } as any);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct(id);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(ax.response?.data?.message || ax.message || 'Could not delete product');
     }
-    setDialogOpen(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.sku.trim() || !form.supplierId) {
+      toast.error('Name, SKU, and supplier are required');
+      return;
+    }
+    try {
+      const payload = {
+        ...form,
+        price: Number(form.price || 0),
+        quantity: Number(form.quantity || 0),
+        threshold: Number(form.threshold || 0),
+      };
+      if (editing) {
+        await updateProduct(editing._id, payload);
+      } else {
+        await addProduct(payload);
+      }
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(ax.response?.data?.message || ax.message || 'Could not save product');
+    }
   };
 
   return (
@@ -49,7 +84,9 @@ const InventoryPage: React.FC = () => {
           <h1 className="text-xl font-bold text-foreground">Inventory</h1>
           <p className="text-xs text-muted-foreground">{products.length} products total</p>
         </div>
-        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Product</Button>
+        {canEdit && (
+          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Product</Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -91,7 +128,7 @@ const InventoryPage: React.FC = () => {
                   <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Price</th>
                   <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Stock</th>
                   <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">Supplier</th>
-                  <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Actions</th>
+                  {canEdit && <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -107,16 +144,18 @@ const InventoryPage: React.FC = () => {
                         : <span className="text-foreground">{p.quantity}</span>}
                     </td>
                     <td className="py-2.5 px-3 text-muted-foreground">{p.supplierName}</td>
-                    <td className="py-2.5 px-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => openEdit(p)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit2 className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => deleteProduct(p._id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-                      </div>
-                    </td>
+                    {canEdit && (
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => openEdit(p)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit2 className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => handleDelete(p._id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">
+                  <tr><td colSpan={canEdit ? 7 : 6} className="py-10 text-center text-muted-foreground">
                     <Package className="h-6 w-6 mx-auto mb-1 opacity-30" />No products found
                   </td></tr>
                 )}
@@ -126,7 +165,7 @@ const InventoryPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen && canEdit} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Product' : 'Add Product'}</DialogTitle>
@@ -138,9 +177,9 @@ const InventoryPage: React.FC = () => {
             </div>
             <div className="space-y-1"><Label>Category</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1"><Label>Price</Label><Input type="number" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value })} /></div>
-              <div className="space-y-1"><Label>Qty</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
-              <div className="space-y-1"><Label>Threshold</Label><Input type="number" value={form.threshold} onChange={e => setForm({ ...form, threshold: +e.target.value })} /></div>
+              <div className="space-y-1"><Label>Price</Label><Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value === '' ? '' : Number(e.target.value) })} /></div>
+              <div className="space-y-1"><Label>Qty</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value === '' ? '' : Number(e.target.value) })} /></div>
+              <div className="space-y-1"><Label>Threshold</Label><Input type="number" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value === '' ? '' : Number(e.target.value) })} /></div>
             </div>
             <div className="space-y-1">
               <Label>Supplier</Label>

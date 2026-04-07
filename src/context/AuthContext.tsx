@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { User, UserRole } from '@/types';
-import { mockUser } from '@/data/mockData';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -43,12 +43,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [resetTimer]);
 
-  const login = async (email: string, _password: string) => {
-    // Mock login - replace with actual API call to your Express backend
-    // POST /api/auth/login { email, password }
-    const loggedInUser = { ...mockUser, email };
-    setUser(loggedInUser);
-    localStorage.setItem('ims_user', JSON.stringify(loggedInUser));
+  const login = async (email: string, password: string) => {
+    const { data } = await api.post<User>('/auth/login', { email, password });
+    setUser(data);
+    localStorage.setItem('ims_user', JSON.stringify(data));
   };
 
   const hasRole = (roles: UserRole[]) => {

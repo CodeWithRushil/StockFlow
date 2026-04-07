@@ -7,11 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Supplier } from '@/types';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const emptySupplier = { companyName: '', contactPerson: '', email: '', phone: '' };
 
 const SuppliersPage: React.FC = () => {
+  const { hasRole } = useAuth();
   const { suppliers, products, addSupplier, updateSupplier, deleteSupplier } = useInventory();
+  const canEdit = hasRole(['admin', 'manager']);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState(emptySupplier);
@@ -25,13 +29,31 @@ const SuppliersPage: React.FC = () => {
   const openAdd = () => { setEditing(null); setForm(emptySupplier); setDialogOpen(true); };
   const openEdit = (s: Supplier) => { setEditing(s); setForm({ companyName: s.companyName, contactPerson: s.contactPerson, email: s.email, phone: s.phone }); setDialogOpen(true); };
 
-  const handleSave = () => {
-    if (editing) updateSupplier(editing._id, form);
-    else addSupplier(form);
-    setDialogOpen(false);
+  const handleSave = async () => {
+    if (!form.companyName.trim() || !form.email.trim()) {
+      toast.error('Company name and email are required');
+      return;
+    }
+    try {
+      if (editing) await updateSupplier(editing._id, form);
+      else await addSupplier(form);
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(ax.response?.data?.message || ax.message || 'Could not save supplier');
+    }
   };
 
   const getProductCount = (supplierId: string) => products.filter(p => p.supplierId === supplierId).length;
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSupplier(id);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(ax.response?.data?.message || ax.message || 'Could not delete supplier');
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -40,7 +62,7 @@ const SuppliersPage: React.FC = () => {
           <h1 className="text-xl font-bold text-foreground">Suppliers</h1>
           <p className="text-xs text-muted-foreground">{suppliers.length} suppliers</p>
         </div>
-        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Supplier</Button>
+        {canEdit && <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Supplier</Button>}
       </div>
 
       <Card>
@@ -60,10 +82,12 @@ const SuppliersPage: React.FC = () => {
                 <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
                   <Users className="h-4 w-4 text-primary" />
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={() => openEdit(s)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit2 className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => deleteSupplier(s._id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-                </div>
+                {canEdit && (
+                  <div className="flex gap-1">
+                    <button onClick={() => openEdit(s)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => handleDelete(s._id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                )}
               </div>
               <h3 className="font-semibold text-foreground text-sm">{s.companyName}</h3>
               <p className="text-xs text-muted-foreground">{s.contactPerson}</p>
@@ -82,7 +106,7 @@ const SuppliersPage: React.FC = () => {
         )}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen && canEdit} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{editing ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle></DialogHeader>
           <div className="space-y-3">

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useInventory } from '@/context/InventoryContext';
 import { SaleItem, Sale } from '@/types';
-import { ShoppingCart, Search, Plus, Trash2, Printer, Receipt, X } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Trash2, Printer, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,9 +9,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const SalesPage: React.FC = () => {
-  const { products, sales, createSale } = useInventory();
+  const { products, sales, createSale, deleteSale } = useInventory();
+  const { hasRole } = useAuth();
+  const canDeleteSale = hasRole(['admin']);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [billDialogOpen, setBillDialogOpen] = useState(false);
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
@@ -20,8 +24,6 @@ const SalesPage: React.FC = () => {
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
-
-  const billRef = useRef<HTMLDivElement>(null);
 
   const filtered = sales.filter(s =>
     s.saleId?.toLowerCase().includes(search.toLowerCase()) ||
@@ -51,37 +53,91 @@ const SalesPage: React.FC = () => {
   const removeFromCart = (idx: number) => setCart(cart.filter((_, i) => i !== idx));
   const cartTotal = cart.reduce((sum, item) => sum + item.total, 0);
 
-  const handleCompleteSale = () => {
+  const handleCompleteSale = async () => {
     if (cart.length === 0) return;
     for (const item of cart) {
       const prod = products.find(p => p._id === item.productId);
       if (!prod || prod.quantity < item.quantity) return;
     }
-    const saleId = createSale(cart);
-    const completedSale = sales.find(s => s.saleId === saleId) ||
-      { _id: '', saleId, items: cart, totalAmount: cartTotal, soldBy: 'u1', soldByName: 'John Admin', createdAt: new Date().toISOString() };
-    setCart([]);
-    setDialogOpen(false);
-    setViewingSale(completedSale as Sale);
-    setBillDialogOpen(true);
+    try {
+      const completedSale = await createSale(cart);
+      setCart([]);
+      setDialogOpen(false);
+      setViewingSale(completedSale as Sale);
+      setBillDialogOpen(true);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to create sale');
+    }
   };
 
   const handleViewBill = (sale: Sale) => { setViewingSale(sale); setBillDialogOpen(true); };
 
+  const handleDeleteSale = async (id: string) => {
+    try {
+      await deleteSale(id);
+      if (viewingSale?._id === id) setBillDialogOpen(false);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to delete sale');
+    }
+  };
+
   const handlePrint = () => {
-    if (!billRef.current) return;
+    if (!viewingSale) return;
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const rows = (viewingSale.items || [])
+      .map(
+        (item) => `
+        <tr>
+          <td>${item.productName}</td>
+          <td class="right">${item.quantity}</td>
+          <td class="right">Rs ${item.unitPrice.toFixed(2)}</td>
+          <td class="right">Rs ${item.total.toFixed(2)}</td>
+        </tr>`
+      )
+      .join('');
+
     printWindow.document.write(`
-      <html><head><title>Bill - ₹{viewingSale?.saleId}</title>
+      <html><head><title>Bill - ${viewingSale.saleId}</title>
       <style>
-        body { font-family: monospace; max-width: 300px; margin: 0 auto; padding: 16px; font-size: 12px; }
+        body { font-family: Arial, sans-serif; max-width: 340px; margin: 0 auto; padding: 16px; font-size: 12px; color: #111; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 3px 2px; }
-        th { border-bottom: 1px dashed #000; }
+        th, td { text-align: left; padding: 4px 2px; }
+        th { border-bottom: 1px dashed #000; font-weight: 600; }
+        td { border-bottom: 1px dashed #ddd; }
         .right { text-align: right; }
-        hr { border: none; border-top: 1px dashed #000; }
-      </style></head><body>₹{billRef.current.innerHTML}</body></html>
+        .muted { color: #555; font-size: 11px; }
+        .total { font-size: 16px; font-weight: 700; }
+        hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+      </style></head><body>
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:700">StockFlow</div>
+          <div class="muted">Inventory Management System</div>
+        </div>
+        <hr />
+        <div class="muted" style="display:flex;justify-content:space-between">
+          <span>ID: <b>${viewingSale.saleId}</b></span>
+          <span>${new Date(viewingSale.createdAt).toLocaleString()}</span>
+        </div>
+        <hr />
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th><th class="right">Qty</th><th class="right">Rate</th><th class="right">Amt</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <hr />
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="muted">Total</span>
+          <span class="total">Rs ${viewingSale.totalAmount.toFixed(2)}</span>
+        </div>
+        <div class="muted" style="margin-top:6px">Cashier: ${viewingSale.soldByName || '-'}</div>
+        <hr />
+        <div class="muted" style="text-align:center">Thank you!</div>
+      </body></html>
     `);
     printWindow.document.close();
     printWindow.print();
@@ -123,6 +179,7 @@ const SalesPage: React.FC = () => {
                   <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">Sold By</th>
                   <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">Date</th>
                   <th className="text-center py-2.5 px-3 font-medium text-muted-foreground">Bill</th>
+                  {canDeleteSale && <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -140,10 +197,17 @@ const SalesPage: React.FC = () => {
                         <Receipt className="h-4 w-4" />
                       </button>
                     </td>
+                    {canDeleteSale && (
+                      <td className="py-2.5 px-3 text-right">
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => void handleDeleteSale(s._id)}>
+                          Delete
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={6} className="py-10 text-center text-muted-foreground">No sales found</td></tr>
+                  <tr><td colSpan={canDeleteSale ? 7 : 6} className="py-10 text-center text-muted-foreground">No sales found</td></tr>
                 )}
               </tbody>
             </table>
@@ -242,7 +306,7 @@ const SalesPage: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
 
-          <div ref={billRef} className="space-y-2 text-sm">
+          <div className="space-y-2 text-sm">
             <div className="text-center">
               <p className="font-bold text-foreground">StockFlow</p>
               <p className="text-xs text-muted-foreground">Inventory Management System</p>

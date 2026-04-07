@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, FileText,
+  LayoutDashboard, Package, ShoppingCart, Users, FileText, UserCog,
   LogOut, Menu, X, AlertTriangle, Sun, Moon
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -12,10 +12,11 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'manager', 'staff'] },
-  { to: '/inventory', label: 'Inventory', icon: Package, roles: ['admin', 'manager'] },
+  { to: '/inventory', label: 'Inventory', icon: Package, roles: ['admin', 'manager', 'staff'] },
   { to: '/sales', label: 'Sales', icon: ShoppingCart, roles: ['admin', 'manager', 'staff'] },
-  { to: '/suppliers', label: 'Suppliers', icon: Users, roles: ['admin', 'manager'] },
-  { to: '/purchase-orders', label: 'Purchase Orders', icon: FileText, roles: ['admin', 'manager'] },
+  { to: '/suppliers', label: 'Suppliers', icon: Users, roles: ['admin', 'manager', 'staff'] },
+  { to: '/purchase-orders', label: 'Purchase Orders', icon: FileText, roles: ['admin', 'manager', 'staff'] },
+  { to: '/users', label: 'Users', icon: UserCog, roles: ['admin'] },
 ];
 
 export const AppSidebar: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => {
@@ -76,7 +77,9 @@ export const AppSidebar: React.FC<{ open: boolean; onToggle: () => void }> = ({ 
           <div className="flex items-center justify-between px-2 py-1.5">
             <div>
               <p className="text-sm font-medium text-sidebar-primary-foreground">{user?.name}</p>
-              <p className="text-xs capitalize text-sidebar-foreground">{user?.role}</p>
+              <p className="text-xs text-sidebar-foreground">
+                {user?.role ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}` : ''}
+              </p>
             </div>
             <button onClick={logout} className="p-1.5 rounded hover:bg-sidebar-accent text-sidebar-foreground"
               title="Logout">
