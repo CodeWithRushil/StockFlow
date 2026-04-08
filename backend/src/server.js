@@ -15,7 +15,24 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/** On Render, free web services idle after ~15m; ping public URL periodically to reduce cold starts. */
+const allowedOrigins = [
+  "https://stock-flow-ims.vercel.app",
+  "http://localhost:8080",
+  process.env.FRONTEND_URL,
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
 const scheduleKeepAlivePing = () => {
   const url =
     process.env.KEEPALIVE_URL ||
