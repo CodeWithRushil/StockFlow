@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -13,6 +14,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
 const allowedOrigins = [
   "https://stock-flow-ims.vercel.app",
   "http://localhost:8080",
@@ -20,13 +22,15 @@ const allowedOrigins = [
   process.env.CORS_ORIGIN,
 ].filter(Boolean);
 
-const normalizeOrigin = (origin) => origin.replace(/\/$/, "");
-const allowedOriginSet = new Set(allowedOrigins.map(normalizeOrigin));
-const isAllowedOrigin = (origin) => {
-  const normalized = normalizeOrigin(origin);
-  if (allowedOriginSet.has(normalized)) return true;
-  if (normalized.startsWith("http://localhost:")) return true;
-  return /^https:\/\/stock-flow-ims(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(normalized);
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 const scheduleKeepAlivePing = () => {
@@ -47,20 +51,7 @@ const scheduleKeepAlivePing = () => {
   console.log("Keepalive cron scheduled (every 10 min) ->", url);
 };
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && isAllowedOrigin(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-    res.header("Vary", "Origin");
-  }
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", req.headers["access-control-request-headers"] || "Content-Type,Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  return next();
-});
+app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
