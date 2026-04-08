@@ -85,6 +85,11 @@ const SalesPage: React.FC = () => {
     if (!viewingSale) return;
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+    const printFavicon =
+      'data:image/svg+xml,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="hsl(221 83% 53%)"/><path d="M9 11.5 16 8l7 3.5V21a1.5 1.5 0 0 1-.83 1.34L16 25l-6.17-2.66A1.5 1.5 0 0 1 9 21V11.5Z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 11.5 16 15l7-3.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M16 15V25" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>'
+      );
 
     const rows = (viewingSale.items || [])
       .map(
@@ -99,7 +104,10 @@ const SalesPage: React.FC = () => {
       .join('');
 
     printWindow.document.write(`
-      <html><head><title>Bill - ${viewingSale.saleId}</title>
+      <html><head>
+      <base href="${window.location.origin}/" />
+      <link rel="icon" href="${printFavicon}" type="image/svg+xml" />
+      <title>Bill - ${viewingSale.saleId}</title>
       <style>
         body { font-family: Arial, sans-serif; max-width: 340px; margin: 0 auto; padding: 16px; font-size: 12px; color: #111; }
         table { width: 100%; border-collapse: collapse; }
